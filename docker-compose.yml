@@ -1,0 +1,11 @@
+services:
+  hdhr-epg:
+    build: .
+    container_name: hdhr-epg
+    environment:
+      HOST: ${HDHR_HOST:-hdhomerun.local}
+      OUTPUT: /epg/epg.xml
+      INTERVAL_SECONDS: "21600"
+    volumes:
+      - ./epg:/epg
+    restart: unless-stopped

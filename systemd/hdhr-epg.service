@@ -1,0 +1,11 @@
+[Unit]
+Description=HDHomeRun free EPG -> XMLTV refresh
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=YOUR_USER
+WorkingDirectory=/path/to/tv-epg
+ExecStart=/usr/bin/python3 /path/to/tv-epg/hdhr_epg.py --host hdhomerun.local --output /path/to/tv-epg/epg.xml
+Nice=10

@@ -1,0 +1,11 @@
+epg.xml
+epg.xml.tmp
+epg.log
+atsc1.xml
+atsc1.xml.tmp
+atsc1-scan-state.json
+atsc1-scan-state.json.tmp
+*.ts
+__pycache__/
+*.pyc
+.docker/

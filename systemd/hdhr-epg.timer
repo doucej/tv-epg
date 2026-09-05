@@ -1,0 +1,11 @@
+[Unit]
+Description=Refresh HDHomeRun XMLTV EPG every 6 hours
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=6h
+Persistent=true
+AccuracySec=1m
+
+[Install]
+WantedBy=timers.target
