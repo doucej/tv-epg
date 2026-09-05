@@ -113,6 +113,20 @@ def remap(root, lineup, keep_unknown):
     return len(old_to_new), len(doomed), kept_progs, len(doomed_progs), missing
 
 
+def indent_xml(element, level=0):
+    """Pretty-print XML without requiring ElementTree.indent (Python 3.9+)."""
+    prefix = "\n" + "  " * level
+    if len(element):
+        if not element.text or not element.text.strip():
+            element.text = prefix + "  "
+        for child in element:
+            indent_xml(child, level + 1)
+        if not element[-1].tail or not element[-1].tail.strip():
+            element[-1].tail = prefix
+    if level and (not element.tail or not element.tail.strip()):
+        element.tail = prefix
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(
         description="Generate an XMLTV EPG file from a free HDHomeRun device (no DVR subscription)."
@@ -158,7 +172,7 @@ def main(argv=None):
         return 1
 
     tree = ET.ElementTree(root)
-    ET.indent(tree, space="  ")
+    indent_xml(root)
     out_dir = os.path.dirname(os.path.abspath(args.output))
     os.makedirs(out_dir, exist_ok=True)
     tmp_path = args.output + ".tmp"

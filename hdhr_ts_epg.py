@@ -103,9 +103,23 @@ def write_xmltv(parsed, output):
         if event.get("description"):
             ET.SubElement(node, "desc", {"lang": "en"}).text = event["description"]
         count += 1
-    ET.indent(root, space="  ")
+    indent_xml(root)
     ET.ElementTree(root).write(output, encoding="utf-8", xml_declaration=True)
     return count
+
+
+def indent_xml(element, level=0):
+    """Pretty-print XML without requiring ElementTree.indent (Python 3.9+)."""
+    prefix = "\n" + "  " * level
+    if len(element):
+        if not element.text or not element.text.strip():
+            element.text = prefix + "  "
+        for child in element:
+            indent_xml(child, level + 1)
+        if not element[-1].tail or not element[-1].tail.strip():
+            element[-1].tail = prefix
+    if level and (not element.tail or not element.tail.strip()):
+        element.tail = prefix
 
 
 def parse_rf_range(value):

@@ -42,7 +42,7 @@ Options:
 | `--timeout` | `30` | HTTP timeout (seconds) |
 | `--insecure` | off | skip TLS verification (cloud API) |
 
-Zero dependencies — Python 3.9+ standard library only.
+Zero dependencies — Python 3.7+ standard library only.
 
 Sample run against the Flex 4K DVR:
 
