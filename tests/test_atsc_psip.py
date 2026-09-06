@@ -42,6 +42,19 @@ class AtscPsipCaptureTests(unittest.TestCase):
         self.assertEqual(ids, {"2.1", "24.1", "44.1", "66.5"})
         self.assertFalse([programme for programme in root.findall("programme") if programme.get("channel") not in ids])
 
+    def test_sweep_merge_keeps_virtual_channels_from_multiple_muxes(self):
+        merged = {"channels": {}, "events": {}}
+        hdhr_ts_epg.merge_mux(merged, self.parsed, 5)
+        other = {"channels": [
+            {"lcn": "26.1", "name": "WCEA", "program": 1, "source_id": 16},
+            {"lcn": "46.1", "name": "WWDP-DT", "program": 3, "source_id": 17},
+            {"lcn": "49.1", "name": "WVCC", "program": 3, "source_id": 18},
+        ], "events": []}
+        hdhr_ts_epg.merge_mux(merged, other, 36)
+        output = hdhr_ts_epg.merged_for_xmltv(merged)
+        self.assertEqual({"2.1", "24.1", "44.1", "66.5", "26.1", "46.1", "49.1"},
+                         {channel["lcn"] for channel in output["channels"]})
+
 
 if __name__ == "__main__":
     unittest.main()

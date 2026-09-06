@@ -8,7 +8,7 @@ tables with the Python standard library only.
 Usage:
   python3 hdhr_ts_epg.py --host hdhomerun.local --list
   python3 hdhr_ts_epg.py --host hdhomerun.local --rf-channel 5 --seconds 20 --xmltv atsc1.xml
-  python3 hdhr_ts_epg.py --host hdhomerun.local --sweep --rf-range 2-36 --seconds 15 --xmltv atsc1.xml
+  python3 hdhr_ts_epg.py --host hdhomerun.local --sweep --rf-range 2-69 --seconds 15 --xmltv atsc1.xml
   python3 hdhr_ts_epg.py --parse capture.ts --channel 4.1
   python3 hdhr_ts_epg.py --parse capture.ts --xmltv atsc1.xml
 """
@@ -136,7 +136,7 @@ def parse_rf_range(value):
     return range(start, end + 1)
 
 
-def load_scan_state(path, host):
+def load_scan_state(path, host, rf_range):
     try:
         with open(path, encoding="utf-8") as state_file:
             state = json.load(state_file)
@@ -146,6 +146,8 @@ def load_scan_state(path, host):
         print(f"[ts-epg] ignoring unreadable scan state {path}: {exc}", file=sys.stderr)
         return None
     if state.get("version") != 1 or state.get("host") != host:
+        return None
+    if state.get("rf_range") != [rf_range.start, rf_range.stop - 1]:
         return None
     return state
 
@@ -212,7 +214,7 @@ def main():
     ap.add_argument("--rf-channel", type=int, help="capture full ATSC 1.0 mux from physical RF channel")
     ap.add_argument("--sweep", action="store_true", help="capture every RF channel in --rf-range and merge PSIP")
     ap.add_argument("--full-scan", action="store_true", help="with --sweep, retune the complete RF range and refresh scan state")
-    ap.add_argument("--rf-range", type=parse_rf_range, default=parse_rf_range("2-36"), help="physical RF range for --sweep (default: 2-36)")
+    ap.add_argument("--rf-range", type=parse_rf_range, default=parse_rf_range("2-69"), help="physical RF range for --sweep (default: 2-69)")
     ap.add_argument("--scan-state", default="atsc1-scan-state.json", help="persisted RF discovery state (default: atsc1-scan-state.json)")
     ap.add_argument("--seconds", type=float, default=5)
     ap.add_argument("--out", default="capture.ts")
@@ -231,7 +233,7 @@ def main():
     if args.sweep:
         if args.parse or args.rf_channel is not None or args.channel or args.json:
             ap.error("--sweep cannot be combined with --parse, --rf-channel, --channel, or --json")
-        state = None if args.full_scan else load_scan_state(args.scan_state, args.host)
+        state = None if args.full_scan else load_scan_state(args.scan_state, args.host, args.rf_range)
         if state:
             rf_channels = state_rf_channels(state)
             print(f"[ts-epg] optimized sweep: {len(rf_channels)} RF channels from {args.scan_state}")
@@ -244,13 +246,16 @@ def main():
         for rf_channel in rf_channels:
             path = f"/auto/ch{rf_channel}"
             print(f"[ts-epg] RF {rf_channel}: capturing {args.seconds}s ...")
+            cached_mux = state.get("muxes", {}).get(str(rf_channel), {}) if state else {}
             try:
                 n = capture(args.host, path, args.seconds, None)
             except (OSError, SystemExit) as exc:
                 print(f"[ts-epg] RF {rf_channel}: unavailable ({exc})")
+                if cached_mux.get("channels"):
+                    merge_mux(merged, {"channels": cached_mux["channels"], "events": []}, rf_channel)
+                    print(f"[ts-epg] RF {rf_channel}: retaining cached TVCT channel map")
                 continue
             parsed = parse_ts(n)
-            cached_mux = state.get("muxes", {}).get(str(rf_channel), {}) if state else {}
             if not parsed["channels"] and cached_mux.get("channels"):
                 parsed["channels"] = cached_mux["channels"]
                 print(f"[ts-epg] RF {rf_channel}: using cached TVCT channel map")

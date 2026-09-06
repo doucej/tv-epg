@@ -127,7 +127,7 @@ virtual channels are merged by their virtual-channel number:
 
 ```bash
 python3 hdhr_ts_epg.py --host hdhomerun.local \
-  --sweep --rf-range 2-36 --seconds 12 \
+  --sweep --rf-range 2-69 --seconds 12 \
   --xmltv atsc1.xml --compare-cloud epg.xml
 ```
 
@@ -148,6 +148,16 @@ python3 hdhr_ts_epg.py --host hdhomerun.local --sweep --full-scan --seconds 12 -
 # Normal recurring refresh; tunes only RFs stored in the scan state.
 python3 hdhr_ts_epg.py --host hdhomerun.local --sweep --seconds 12 --xmltv atsc1.xml
 ```
+
+The `--rf-range` values are **physical RF channel numbers**, not virtual
+channel labels. For example, on one Boston scan, virtual `49.x` services
+were carried on physical RF 6, virtual `46.x` on RF 10, virtual `26.x` on
+RF 36, and virtual `4.x` on RF 20. Do not infer a physical RF number from a
+virtual channel number.
+
+If a known RF temporarily returns HTTP 503 during an optimized sweep, its
+cached TVCT channel map is retained so the channels remain in XMLTV; new
+programme data is added when that mux is successfully captured again.
 
 The HDHomeRun's ATSC 1.0 mux uses these valid MPEG-2 CRC-32 PSIP tables:
 
@@ -173,13 +183,12 @@ editorial wording or broadcast-length truncation. PSIP does not consistently
 provide the cloud guide's icons, series IDs, episode numbering, categories,
 or new/repeat flags.
 
-On this Boston lineup, a 12-second sweep of RF 2-36 locked 12 multiplexes
-and generated `atsc1.xml` with **59 channels and 690 programmes**. It shared
-58 channels with the 69-channel cloud guide and matched 615 cloud programme
-start times. The missing cloud channels were `6.1`, `6.2`, `6.3`, `6.5`, and
-the NextGen services `102.1`, `104.1`, `105.1`, `115.1`, `125.1`, `150.1`,
-and `166.1`. PSIP supplied approximately two days of schedule in that sweep;
-the cloud guide supplied 3,900 programmes for the same general window.
+On this Boston lineup, a full 12-second sweep of physical RF 2-69 locked 16
+multiplexes and generated **95 channels and 1,134 programmes**, including
+virtual services `26.x`, `46.x`, and `49.x`. Those numbers are intentionally
+different: a virtual channel such as `49.1` may be carried on physical RF 6.
+The cloud guide remains the more complete source for programme volume and
+ATSC 3.0 services.
 
 ATSC 3.0 remains cloud-only: it does not natively use MPEG-TS, and the FLEX
 4K does not embed its distinct EPG format in its compatibility TS. Keep the
