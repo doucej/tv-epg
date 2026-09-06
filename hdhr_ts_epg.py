@@ -84,20 +84,24 @@ def build_preview(parsed, channel):
 
 def write_xmltv(parsed, output):
     root = ET.Element("tv", {"generator-info-name": "hdhr_ts_epg.py"})
-    channels = {channel["source_id"]: channel for channel in parsed["channels"]}
+    channels = {channel["lcn"]: channel for channel in parsed["channels"]}
     for channel in sorted(channels.values(), key=lambda c: tuple(map(int, c["lcn"].split(".")))):
         node = ET.SubElement(root, "channel", {"id": channel["lcn"]})
         ET.SubElement(node, "display-name").text = channel["lcn"]
         ET.SubElement(node, "display-name").text = channel["name"]
     count = 0
     for event in sorted(parsed["events"], key=lambda e: (e["start"], e["source_id"], e["event_id"])):
-        channel = channels.get(event["source_id"])
+        channel_id = event.get("lcn")
+        if channel_id is None:
+            channel_id = next((channel["lcn"] for channel in channels.values()
+                               if channel["source_id"] == event["source_id"]), None)
+        channel = channels.get(channel_id)
         if channel is None or not event["title"]:
             continue
         node = ET.SubElement(root, "programme", {
             "start": event["start"].strftime("%Y%m%d%H%M%S +0000"),
             "stop": (event["start"] + timedelta(seconds=event["duration_seconds"])).strftime("%Y%m%d%H%M%S +0000"),
-            "channel": channel["lcn"],
+            "channel": channel_id,
         })
         ET.SubElement(node, "title", {"lang": "en"}).text = event["title"]
         if event.get("description"):
@@ -182,18 +186,7 @@ def merge_mux(merged, parsed, rf_channel):
 
 def merged_for_xmltv(merged):
     channels = list(merged["channels"].values())
-    events = []
-    for event in merged["events"].values():
-        channel = merged["channels"][event["lcn"]]
-        events.append({**event, "source_id": channel["source_id"]})
-    # write_xmltv uses source_id as its local key. Assign stable merged IDs.
-    normalized_channels = []
-    for source_id, channel in enumerate(channels, start=1):
-        normalized_channels.append({**channel, "source_id": source_id})
-        for index, event in enumerate(events):
-            if event["lcn"] == channel["lcn"]:
-                events[index] = {**event, "source_id": source_id}
-    return {"channels": normalized_channels, "events": events}
+    return {"channels": channels, "events": list(merged["events"].values())}
 
 
 def compare_with_cloud(merged, cloud_path):
