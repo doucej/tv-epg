@@ -158,6 +158,10 @@ virtual channel number.
 If a known RF temporarily returns HTTP 503 during an optimized sweep, its
 cached TVCT channel map is retained so the channels remain in XMLTV; new
 programme data is added when that mux is successfully captured again.
+The same retention applies when a capture sees only part of a multi-section
+TVCT carousel: newly observed channel entries are merged with, rather than
+replace, the cached map. This prevents a short or unlucky overnight capture
+from dropping sibling services such as `2.2` and `2.3`.
 
 The HDHomeRun's ATSC 1.0 mux uses these valid MPEG-2 CRC-32 PSIP tables:
 

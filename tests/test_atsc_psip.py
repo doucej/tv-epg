@@ -55,6 +55,16 @@ class AtscPsipCaptureTests(unittest.TestCase):
         self.assertEqual({"2.1", "24.1", "44.1", "66.5", "26.1", "46.1", "49.1"},
                          {channel["lcn"] for channel in output["channels"]})
 
+    def test_partial_tvct_does_not_discard_cached_channels(self):
+        partial = {"channels": [{"lcn": "2.1", "name": "WGBH-HD", "program": 3, "source_id": 1}], "events": []}
+        cached = [
+            {"lcn": "2.1", "name": "WGBH-HD", "program": 3, "source_id": 1},
+            {"lcn": "2.2", "name": "World", "program": 4, "source_id": 2},
+            {"lcn": "2.3", "name": "WGBH-SD", "program": 5, "source_id": 3},
+        ]
+        merged = hdhr_ts_epg.merge_cached_channels(partial, cached)
+        self.assertEqual({"2.1", "2.2", "2.3"}, {channel["lcn"] for channel in merged["channels"]})
+
 
 if __name__ == "__main__":
     unittest.main()

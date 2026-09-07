@@ -186,6 +186,13 @@ def merge_mux(merged, parsed, rf_channel):
         merged["events"][key] = {**event, "lcn": channel["lcn"], "rf_channel": rf_channel}
 
 
+def merge_cached_channels(parsed, cached_channels):
+    """Preserve TVCT entries missed by a partial PSIP carousel capture."""
+    channels = {channel["lcn"]: channel for channel in cached_channels}
+    channels.update({channel["lcn"]: channel for channel in parsed["channels"]})
+    return {**parsed, "channels": list(channels.values())}
+
+
 def merged_for_xmltv(merged):
     channels = list(merged["channels"].values())
     return {"channels": channels, "events": list(merged["events"].values())}
@@ -256,8 +263,9 @@ def main():
                     print(f"[ts-epg] RF {rf_channel}: retaining cached TVCT channel map")
                 continue
             parsed = parse_ts(n)
+            if cached_mux.get("channels"):
+                parsed = merge_cached_channels(parsed, cached_mux["channels"])
             if not parsed["channels"] and cached_mux.get("channels"):
-                parsed["channels"] = cached_mux["channels"]
                 print(f"[ts-epg] RF {rf_channel}: using cached TVCT channel map")
             if not parsed["channels"]:
                 print(f"[ts-epg] RF {rf_channel}: no valid TVCT")
